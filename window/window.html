@@ -14,6 +14,10 @@
     <div id="explanation" class="section">
       <p>This tool searches address books for matching contact entries. It can automatically delete entries that have equivalent or less information than another one. Any remaining matches are presented for manual treatment.</p>
       
+      <div id="profile-info" class="info-message" style="display: none; margin-bottom: 10px; padding: 8px; background-color: #e8f4f8; border-left: 3px solid #0066cc;">
+        <strong>Note:</strong> This extension accesses Thunderbird's native address books via the WebExtension API. If you use CardBook, note that CardBook maintains its own separate address book list that differs from Thunderbird's native address books. Only Thunderbird's native address books will appear in the dropdowns above.
+      </div>
+      
       <div class="form-group">
         <label for="addressbook1">Address Book 1:</label>
         <select id="addressbook1"></select>

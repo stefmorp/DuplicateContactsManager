@@ -112,6 +112,12 @@ async function loadAddressBooks() {
     elements.addressbook1.innerHTML = "";
     elements.addressbook2.innerHTML = "";
     
+    if (books.length === 0) {
+      elements.statusText.textContent = "Warning: No address books found. Make sure Thunderbird is running with the correct profile.";
+      elements.statusText.className = "status-text error-message";
+      return;
+    }
+    
     books.forEach(book => {
       const option1 = document.createElement("option");
       option1.value = book.id;
@@ -128,6 +134,12 @@ async function loadAddressBooks() {
     if (books.length > 0) {
       elements.addressbook1.value = books[0].id;
       elements.addressbook2.value = books[0].id;
+      
+      // Show profile info message
+      const profileInfo = document.getElementById("profile-info");
+      if (profileInfo) {
+        profileInfo.style.display = "block";
+      }
     }
   } catch (error) {
     console.error("Error loading address books:", error);
@@ -387,16 +399,25 @@ function displayCardPair(card1, card2, index1, index2) {
   fieldsToShow.forEach(field => {
     const row = document.createElement("div");
     row.className = "table-row";
+    row.dataset.field = field; // Store field name for easy lookup
     
     const label = document.createElement("div");
     label.className = "field-label";
     label.textContent = field + ":";
     row.appendChild(label);
     
-    const value1 = document.createElement("div");
-    value1.className = "field-value keep";
-    value1.textContent = finder.getProperty(card1, field) || "";
-    row.appendChild(value1);
+    // Left side (card1) - editable input
+    const value1Container = document.createElement("div");
+    value1Container.className = "field-value keep";
+    const value1Input = field === 'Notes' 
+      ? document.createElement("textarea")
+      : document.createElement("input");
+    value1Input.type = "text";
+    value1Input.value = finder.getProperty(card1, field) || "";
+    value1Input.dataset.side = "left";
+    value1Input.dataset.field = field;
+    value1Container.appendChild(value1Input);
+    row.appendChild(value1Container);
     
     const equiv = document.createElement("div");
     equiv.className = "equivalence";
@@ -405,10 +426,18 @@ function displayCardPair(card1, card2, index1, index2) {
     equiv.textContent = (v1 === v2 && v1 !== "") ? "≡" : "";
     row.appendChild(equiv);
     
-    const value2 = document.createElement("div");
-    value2.className = "field-value remove";
-    value2.textContent = finder.getProperty(card2, field) || "";
-    row.appendChild(value2);
+    // Right side (card2) - editable input
+    const value2Container = document.createElement("div");
+    value2Container.className = "field-value remove";
+    const value2Input = field === 'Notes'
+      ? document.createElement("textarea")
+      : document.createElement("input");
+    value2Input.type = "text";
+    value2Input.value = finder.getProperty(card2, field) || "";
+    value2Input.dataset.side = "right";
+    value2Input.dataset.field = field;
+    value2Container.appendChild(value2Input);
+    row.appendChild(value2Container);
     
     elements.AttributesTableRows.appendChild(row);
   });
@@ -419,6 +448,17 @@ function displayCardPair(card1, card2, index1, index2) {
   updateCardSelection();
   
   // Make headers clickable to select which card to keep
+  // Remove old listeners first to avoid duplicates
+  const newHeaderLeft = elements.headerLeft.cloneNode(true);
+  elements.headerLeft.parentNode.replaceChild(newHeaderLeft, elements.headerLeft);
+  elements.headerLeft = newHeaderLeft;
+  elements.keepLeftRadio = document.getElementById("keepLeft");
+  
+  const newHeaderRight = elements.headerRight.cloneNode(true);
+  elements.headerRight.parentNode.replaceChild(newHeaderRight, elements.headerRight);
+  elements.headerRight = newHeaderRight;
+  elements.keepRightRadio = document.getElementById("keepRight");
+  
   elements.headerLeft.addEventListener("click", () => {
     elements.keepLeftRadio.checked = true;
     elements.keepRightRadio.checked = false;
@@ -441,21 +481,32 @@ function updateCardSelection() {
     elements.headerRight.className = "card-header selectable keep";
   }
   
-  // Update field highlighting
+  // Update field highlighting and editability
   const rows = elements.AttributesTableRows.querySelectorAll(".table-row");
   rows.forEach(row => {
     const cells = row.querySelectorAll(".field-value");
-    if (cells.length >= 2) {
+    const inputs = row.querySelectorAll("input, textarea");
+    
+    if (cells.length >= 2 && inputs.length >= 2) {
+      const leftInput = inputs[0];
+      const rightInput = inputs[1];
+      
       if (elements.keepLeftRadio.checked) {
+        // Left is selected - make left editable, right read-only
         cells[0].classList.add("keep");
         cells[0].classList.remove("remove");
         cells[1].classList.add("remove");
         cells[1].classList.remove("keep");
+        leftInput.disabled = false;
+        rightInput.disabled = true;
       } else {
+        // Right is selected - make right editable, left read-only
         cells[0].classList.add("remove");
         cells[0].classList.remove("keep");
         cells[1].classList.add("keep");
         cells[1].classList.remove("remove");
+        leftInput.disabled = true;
+        rightInput.disabled = false;
       }
     }
   });
@@ -473,111 +524,47 @@ async function skipAndSearchNext() {
 }
 
 /**
- * Merges two duplicate contacts by combining their properties into one contact,
- * then deletes the duplicate. Uses the Thunderbird contacts API which automatically
- * updates the internal vCard when legacy properties are updated.
- * 
- * @see https://thunderbird-webextension-apis.readthedocs.io/en/stable/examples/vcard.html
+ * Merges data from the unselected contact into the selected contact's input fields in the UI.
+ * The merge happens in the window - user can review and edit before clicking "Apply" to save.
+ * Overflow data (extra emails, phones, etc.) is appended to the Notes field.
  */
-async function mergeAndSearchNext() {
+function mergeAndSearchNext() {
   const [index1, index2] = currentPair;
-  const ab1Id = elements.addressbook1.value;
-  const ab2Id = elements.addressbook2.value;
   
   const keepLeft = elements.keepLeftRadio.checked;
   const cardToKeep = keepLeft ? contacts[0][index1] : contacts[1][index2];
   const cardToMerge = keepLeft ? contacts[1][index2] : contacts[0][index1];
-  const cardToDeleteIndex = keepLeft ? index2 : index1;
-  const cardToDeleteBook = keepLeft ? 1 : 0;
   
-  try {
-    // Get the contact ID we're keeping - ensure it's a string
-    const contactId = String(cardToKeep.id);
+  // Merge properties from both contacts
+  const mergedProperties = mergeContactProperties(cardToKeep, cardToMerge);
+  
+  // Update the input fields on the selected side with merged values
+  const rows = elements.AttributesTableRows.querySelectorAll(".table-row");
+  
+  rows.forEach(row => {
+    const field = row.dataset.field;
+    if (!field) return;
     
-    // Merge properties from both contacts
-    const mergedProperties = mergeContactProperties(cardToKeep, cardToMerge);
+    // Get the input from the selected side (the one that's not disabled)
+    const inputs = row.querySelectorAll("input, textarea");
+    let inputToUse = null;
     
-    // Prepare properties for update - filter out non-updatable fields
-    // The API signature is: contacts.update(id, {properties})
-    // Legacy properties automatically update the internal vCard field
-    // See: https://thunderbird-webextension-apis.readthedocs.io/en/stable/examples/vcard.html
-    const readonlyFields = ['vCard', 'vcard', 'UID', 'UUID', 'CardUID', 'id', 'parentId', 'type'];
-    const nonUpdatableFields = [
-      ...readonlyFields,
-      ...finder.ignoredFields,
-      ...(finder.metaProperties || []),
-      '__Names', '__MailListNames', '__Emails', '__PhoneNumbers',
-      'PopularityIndex', 'LastModifiedDate',
-      'RecordKey', 'DbRowID',
-      'groupDavKey', 'groupDavVersion', 'groupDavVersionPrev',
-      'unprocessed:rev', 'unprocessed:x-ablabel'
-    ];
-    
-    const propertiesToUpdate = {};
-    for (const [property, value] of Object.entries(mergedProperties)) {
-      // Skip non-updatable fields
-      if (nonUpdatableFields.includes(property) || property.startsWith('__')) {
-        continue;
-      }
-      
-      // Normalize value to string or skip
-      let normalizedValue;
-      if (value === null || value === undefined) {
-        continue; // Skip null/undefined - don't include in update
-      } else if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '') continue; // Skip empty strings
-        normalizedValue = trimmed;
-      } else {
-        const str = String(value).trim();
-        if (str === '') continue; // Skip empty after conversion
-        normalizedValue = str;
-      }
-      
-      // Skip selection fields with default "0"
-      if (finder.isSelection(property) && normalizedValue === "0") {
-        continue;
-      }
-      
-      // Ensure it's a string
-      if (typeof normalizedValue !== 'string') {
-        normalizedValue = String(normalizedValue);
-      }
-      
-      propertiesToUpdate[property] = normalizedValue;
+    if (keepLeft) {
+      // Left is selected - update left input
+      inputToUse = inputs[0];
+    } else {
+      // Right is selected - update right input
+      inputToUse = inputs[1];
     }
     
-    // Update contact using legacy properties API
-    // This automatically updates the internal vCard field
-    await browser.contacts.update(contactId, propertiesToUpdate);
-    
-    // Delete the other contact (the one we merged from)
-    const contactToDelete = contacts[cardToDeleteBook][cardToDeleteIndex];
-    if (contactToDelete && contactToDelete.id) {
-      try {
-        // API requires string ID
-        await browser.contacts.delete(String(contactToDelete.id));
-        contacts[cardToDeleteBook][cardToDeleteIndex] = null;
-        if (cardToDeleteBook === 0) {
-          stats.totalDeleted1++;
-        } else {
-          stats.totalDeleted2++;
-        }
-        stats.totalChanged++;
-      } catch (e) {
-        console.error("Error deleting merged contact:", e);
-        // Don't throw - merging succeeded even if deletion failed
-      }
+    if (inputToUse) {
+      // Get the merged value for this field
+      const mergedValue = mergedProperties[field] || "";
+      inputToUse.value = mergedValue;
     }
-    
-  } catch (error) {
-    console.error("Error merging contacts:", error);
-    alert("Error merging contacts: " + error.message);
-    return; // Don't advance if merge failed
-  }
+  });
   
-  // Move to next duplicate
-  await processNextDuplicate();
+  // Note: User can now review and edit the merged result before clicking "Apply" to save
 }
 
 /**
@@ -817,13 +804,15 @@ function mergeContactProperties(card1, card2) {
 }
 
 async function applyAndSearchNext() {
-  // Delete the card that is NOT selected (the one marked for removal)
+  // Collect edited values from the input fields and save to the kept contact,
+  // then delete the other contact
   const [index1, index2] = currentPair;
   const ab1Id = elements.addressbook1.value;
   const ab2Id = elements.addressbook2.value;
   
-  // Determine which card to delete based on selection
+  // Determine which card to keep and which to delete based on selection
   const keepLeft = elements.keepLeftRadio.checked;
+  const cardToKeep = keepLeft ? contacts[0][index1] : contacts[1][index2];
   const cardToDeleteIndex = keepLeft ? index2 : index1;
   const cardToDeleteBook = keepLeft ? 1 : 0;
   
@@ -834,6 +823,73 @@ async function applyAndSearchNext() {
       return;
     }
     
+    // Collect edited values from the input fields
+    // Only collect values from the selected (editable) side
+    const propertiesToUpdate = {};
+    const rows = elements.AttributesTableRows.querySelectorAll(".table-row");
+    
+    rows.forEach(row => {
+      const field = row.dataset.field;
+      if (!field) return;
+      
+      // Get the input from the selected side (the one that's not disabled)
+      const inputs = row.querySelectorAll("input, textarea");
+      let inputToUse = null;
+      
+      if (keepLeft) {
+        // Left is selected - use left input (should not be disabled)
+        inputToUse = inputs[0];
+      } else {
+        // Right is selected - use right input (should not be disabled)
+        inputToUse = inputs[1];
+      }
+      
+      if (inputToUse && !inputToUse.disabled) {
+        const value = inputToUse.value.trim();
+        // Only include non-empty values
+        if (value !== "") {
+          propertiesToUpdate[field] = value;
+        }
+      }
+    });
+    
+    // Update the kept contact with edited values
+    if (Object.keys(propertiesToUpdate).length > 0) {
+      const contactId = String(cardToKeep.id);
+      
+      // Filter out non-updatable fields
+      const readonlyFields = ['vCard', 'vcard', 'UID', 'UUID', 'CardUID', 'id', 'parentId', 'type'];
+      const nonUpdatableFields = [
+        ...readonlyFields,
+        ...finder.ignoredFields,
+        ...(finder.metaProperties || []),
+        '__Names', '__MailListNames', '__Emails', '__PhoneNumbers',
+        'PopularityIndex', 'LastModifiedDate',
+        'RecordKey', 'DbRowID',
+        'groupDavKey', 'groupDavVersion', 'groupDavVersionPrev',
+        'unprocessed:rev', 'unprocessed:x-ablabel'
+      ];
+      
+      const filteredProperties = {};
+      for (const [property, value] of Object.entries(propertiesToUpdate)) {
+        if (!nonUpdatableFields.includes(property) && !property.startsWith('__')) {
+          filteredProperties[property] = String(value);
+        }
+      }
+      
+      if (Object.keys(filteredProperties).length > 0) {
+        try {
+          await browser.contacts.update(contactId, filteredProperties);
+          stats.totalChanged++;
+        } catch (e) {
+          console.error("Error updating contact:", e);
+          alert("Error updating contact: " + (e.message || e));
+          return; // Don't delete if update failed
+        }
+      }
+    }
+    
+    // Delete the other contact (the one we didn't keep)
     const contact = contacts[cardToDeleteBook][cardToDeleteIndex];
     if (contact && contact.id) {
       try {
@@ -848,12 +904,11 @@ async function applyAndSearchNext() {
       } else {
         stats.totalDeleted2++;
       }
-      stats.totalChanged++;
     }
   } catch (error) {
-    console.error("Error deleting contact:", error);
-    alert("Error deleting contact: " + error.message);
-    return; // Don't advance if deletion failed
+    console.error("Error applying changes:", error);
+    alert("Error applying changes: " + error.message);
+    return; // Don't advance if operation failed
   }
   
   // Check if this was the last duplicate
