@@ -10,22 +10,22 @@ A Thunderbird add-on that searches address book(s) for duplicate contact entries
 - **Smart Matching**: Handles variations in formatting, case, accents, and phone number formats
 - **Interactive Review**: Side-by-side comparison of duplicate pairs with options to:
   - **Skip**: Keep both contacts as-is
-  - **Back**: Navigate to previous duplicate
-  - **Merge**: Combine fields from both contacts into one, then delete the duplicate
-  - **Apply**: Keep the selected contact and delete the other
-  - **Close**: Close the window after processing all duplicates
+  - **Merge**: Combine fields from both contacts into one
+  - **Apply**: Keep the selected contact with any changes made, and delete the other
 - **Automatic Collection**: All duplicates are collected before showing them, allowing you to review and process them at your own pace
 - **Statistics**: Shows total contacts before/after, number of duplicates removed, and changes made
 
 ## Installation
 
-### Development/Testing
+Download the code to a directory of your choice, and then:
 
 1. Open **Thunderbird**
 2. Go to **Tools → Add-ons and Themes**
 3. Click the **gear icon (⚙)** → **Debug Add-ons**
 4. Click **Load Temporary Add-on…**
 5. Navigate to this directory and select **`manifest.json`**
+
+See also: https://developer.thunderbird.net/add-ons/hello-world-add-on#installing
 
 The add-on will be loaded temporarily. You can access it via:
 - The toolbar button (opens popup → main window)
@@ -44,11 +44,10 @@ The add-on will be loaded temporarily. You can access it via:
 4. **Click "Start Search"** to begin finding duplicates
 5. **Review duplicates**: For each duplicate pair:
    - Use the radio buttons to select which contact to keep (left or right)
-   - Click **"Merge (Combine Fields)"** to combine all fields from both contacts into the selected one, then delete the duplicate
+   - Click **"Merge (Combine Fields)"** to combine all fields from both contacts into the selected one
      - **Note**: The merged contact will remain in the same address book as the contact you selected to keep
    - Click **"Apply (Delete Other Card)"** to keep the selected contact and delete the other
    - Click **"Skip"** to keep both contacts unchanged
-   - Click **"Back"** to return to the previous duplicate
 6. **After processing all duplicates**: Click **"Close"** to close the window and view the final statistics
 
 ## Important Notes
