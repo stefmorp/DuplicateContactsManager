@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Duplicate Contacts Manager</title>
+  <link rel="stylesheet" href="window.css">
+</head>
+<body>
+  <div id="main-container">
+    <div id="header">
+      <h1>Duplicate Contacts Manager</h1>
+    </div>
+
+    <div id="explanation" class="section">
+      <p>This tool searches address books for matching contact entries. It can automatically delete entries that have equivalent or less information than another one. Any remaining matches are presented for manual treatment.</p>
+      
+      <div class="form-group">
+        <label for="addressbook1">Address Book 1:</label>
+        <select id="addressbook1"></select>
+      </div>
+      
+      <div class="form-group">
+        <label for="addressbook2">Address Book 2:</label>
+        <select id="addressbook2"></select>
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="autoremove">
+          Automatically remove duplicates with less information
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="preservefirst">
+          Preserve entries of first address book when auto-deleting
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <button id="startbutton" class="primary">Start</button>
+        <button id="quitbutton">Quit</button>
+      </div>
+    </div>
+
+    <div id="progress-section" class="section" style="display: none;">
+      <div id="statusText" class="status-text"></div>
+      <div id="progressText" class="progress-text"></div>
+      <div class="progress-bar-container">
+        <div id="progressMeter" class="progress-bar"></div>
+      </div>
+      <div id="statusAddressBook1" class="status-info" style="display: none;">
+        <span id="statusAddressBook1_label"></span>: <span id="statusAddressBook1_size"></span>
+      </div>
+      <div id="statusAddressBook2" class="status-info" style="display: none;">
+        <span id="statusAddressBook2_label"></span>: <span id="statusAddressBook2_size"></span>
+      </div>
+      <button id="stopbutton" style="display: none;">Stop</button>
+    </div>
+
+    <div id="tablepane" class="section" style="display: none;">
+      <div id="tableheader" class="table-header">
+        <div class="field-label"></div>
+        <div class="card-header selectable" id="headerLeft">
+          <input type="radio" name="keepCard" id="keepLeft" value="left" checked>
+          <label for="keepLeft">Card 1 (Keep)</label>
+        </div>
+        <div class="equivalence"></div>
+        <div class="card-header selectable" id="headerRight">
+          <input type="radio" name="keepCard" id="keepRight" value="right">
+          <label for="keepRight">Card 2 (Keep)</label>
+        </div>
+      </div>
+      <div id="AttributesTableRows" class="table-rows"></div>
+      
+      <div class="action-buttons">
+        <button id="skipnextbutton">Skip</button>
+        <button id="backbutton" style="display: none;">Back</button>
+        <button id="mergebutton">Merge (Combine Fields)</button>
+        <button id="applynextbutton">Apply (Delete Other Card)</button>
+        <button id="closebutton" style="display: none;">Close</button>
+      </div>
+    </div>
+
+    <div id="endinfo" class="section" style="display: none;">
+      <h2>Search Finished</h2>
+      <div class="results">
+        <p>Cards before: <span id="resultNumBefore">0</span></p>
+        <p>Cards after: <span id="resultNumAfter">0</span></p>
+        <p>Removed manually: <span id="resultNumRemovedMan">0</span></p>
+        <p>Removed automatically: <span id="resultNumRemovedAuto">0</span></p>
+        <p>Changed: <span id="resultNumChanged">0</span></p>
+        <p>Skipped: <span id="resultNumSkipped">0</span></p>
+      </div>
+      <button id="restartbutton" class="primary">Restart</button>
+    </div>
+  </div>
+
+  <script src="../lib/duplicateFinder.js"></script>
+  <script src="window.js"></script>
+</body>
+</html>
+

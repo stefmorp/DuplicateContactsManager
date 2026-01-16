@@ -1,0 +1,40 @@
+{
+  "manifest_version": 2,
+  "name": "Duplicate Contacts Manager",
+  "description": "Searches address book(s) for pairs of matching contact entries. Can automatically delete entries that have equivalent or less information than the other one. Any remaining matches are presented for manual treatment.",
+  "version": "1.0.6",
+
+  "applications": {
+    "gecko": {
+      "id": "duplicate-contacts-manager@ddvo.net",
+      "strict_min_version": "128.0"
+    }
+  },
+
+  "author": "DDvO",
+  "homepage_url": "https://ddvo.net/DuplicateContactsManager/",
+
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+
+  "permissions": [
+    "addressBooks",
+    "storage",
+    "menus"
+  ],
+
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  },
+
+  "browser_action": {
+    "default_title": "Duplicate Contacts Manager",
+    "default_popup": "popup/popup.html"
+  }
+}
+
+
