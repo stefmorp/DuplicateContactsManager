@@ -373,9 +373,80 @@ var DuplicateEntriesWindow = {
       'plaintext_label': 'plain text',
       'html_label': 'HTML',
       'false_label': 'no',
-      'true_label': 'yes'
+      'true_label': 'yes',
+      // Property labels
+      'PrimaryEmail_label': 'Primary Email',
+      'SecondEmail_label': 'Second Email',
+      'FirstName_label': 'First Name',
+      'LastName_label': 'Last Name',
+      'DisplayName_label': 'Display Name',
+      'NickName_label': 'Nickname',
+      'PhoneticFirstName_label': 'Phonetic First Name',
+      'PhoneticLastName_label': 'Phonetic Last Name',
+      'SpouseName_label': 'Spouse Name',
+      'FamilyName_label': 'Family Name',
+      '_AimScreenName_label': 'AIM Screen Name',
+      '_GoogleTalk_label': 'Google Talk',
+      'CellularNumber_label': 'Mobile Phone',
+      'HomePhone_label': 'Home Phone',
+      'WorkPhone_label': 'Work Phone',
+      'FaxNumber_label': 'Fax Number',
+      'PagerNumber_label': 'Pager Number',
+      'CellularNumberType_label': 'Mobile Phone Type',
+      'HomePhoneType_label': 'Home Phone Type',
+      'WorkPhoneType_label': 'Work Phone Type',
+      'FaxNumberType_label': 'Fax Number Type',
+      'PagerNumberType_label': 'Pager Number Type',
+      'HomeAddress_label': 'Home Address',
+      'HomeAddress2_label': 'Home Address 2',
+      'HomeCity_label': 'Home City',
+      'HomeState_label': 'Home State',
+      'HomeZipCode_label': 'Home Zip Code',
+      'HomeCountry_label': 'Home Country',
+      'WorkAddress_label': 'Work Address',
+      'WorkAddress2_label': 'Work Address 2',
+      'WorkCity_label': 'Work City',
+      'WorkState_label': 'Work State',
+      'WorkZipCode_label': 'Work Zip Code',
+      'WorkCountry_label': 'Work Country',
+      'DefaultAddress_label': 'Default Address',
+      'JobTitle_label': 'Job Title',
+      'Department_label': 'Department',
+      'Company_label': 'Company',
+      'BirthYear_label': 'Birth Year',
+      'BirthMonth_label': 'Birth Month',
+      'BirthDay_label': 'Birth Day',
+      'WebPage1_label': 'Web Page 1',
+      'WebPage2_label': 'Web Page 2',
+      'Custom1_label': 'Custom 1',
+      'Custom2_label': 'Custom 2',
+      'Custom3_label': 'Custom 3',
+      'Custom4_label': 'Custom 4',
+      'Notes_label': 'Notes',
+      'Category_label': 'Category',
+      'PhotoURI_label': 'Photo',
+      'PhotoType_label': 'Photo Type',
+      'PhotoName_label': 'Photo Name',
+      'PreferMailFormat_label': 'Preferred Mail Format',
+      'AllowRemoteContent_label': 'Allow Remote Content',
+      'PreferDisplayName_label': 'Prefer Display Name',
+      'CardType_label': 'Card Type',
+      'PopularityIndex_label': 'Popularity Index',
+      'LastModifiedDate_label': 'Last Modified Date',
+      '__Names_label': 'Names',
+      '__Emails_label': 'Emails',
+      '__PhoneNumbers_label': 'Phone Numbers',
+      '__MailListNames_label': 'Mailing Lists'
     };
-    return strings[name] || name;
+    // If not found, try to create a readable label from the property name
+    if (!strings[name]) {
+      // Remove leading underscore and convert to readable format
+      let readable = name.replace(/_label$/, '').replace(/^__/, '');
+      readable = readable.replace(/([A-Z])/g, ' $1').replace(/^ /, '');
+      readable = readable.charAt(0).toUpperCase() + readable.slice(1);
+      return readable;
+    }
+    return strings[name];
   },
 
   /**
@@ -561,7 +632,9 @@ var DuplicateEntriesWindow = {
           updateProperties[property] = updateFields[property];
           entryModified = true;
         } catch (e) {
-          alert("Internal error: cannot set field '"+property+"' of "+card.DisplayName+": "+e);
+          // PORT: Use getProperty for DisplayName access
+          const displayName = this.getProperty(card, 'DisplayName') || 'contact';
+          alert("Internal error: cannot set field '"+property+"' of "+displayName+": "+e);
         }
       }
     }
@@ -573,7 +646,9 @@ var DuplicateEntriesWindow = {
         await browser.contacts.update(card.id, updateProperties);
         this.totalCardsChanged++;
       } catch (e) {
-        alert("Internal error: cannot update card '"+card.DisplayName+"': "+e);
+        // PORT: Use getProperty for DisplayName access
+        const displayName = this.getProperty(card, 'DisplayName') || 'contact';
+        alert("Internal error: cannot update card '"+displayName+"': "+e);
       }
     }
   },
@@ -606,7 +681,9 @@ var DuplicateEntriesWindow = {
       if(auto)
         this.totalCardsDeletedAuto++;
     } catch (e) {
-      alert("Internal error: cannot remove card '"+card.DisplayName+"': "+e);
+      // PORT: Use getProperty for DisplayName access
+      const displayName = this.getProperty(card, 'DisplayName') || 'contact';
+      alert("Internal error: cannot remove card '"+displayName+"': "+e);
     }
     this.vcards[book][index] = null; // set empty element, but leave element number as is
   },
@@ -822,11 +899,15 @@ var DuplicateEntriesWindow = {
    */
   getProperty: function(card, property) { /* sets are treated as strings here */
     const defaultValue = this.defaultValue(property);
-    // PORT: Access property directly from contact object
+    // PORT: WebExtension contacts store properties in card.properties object
     // ORIGINAL: card.getProperty(property, defaultValue)
-    let value = card[property];
-    if (value === undefined || value === null) {
-      value = defaultValue;
+    let value = defaultValue;
+    // Check properties object first (WebExtension API format)
+    if (card.properties && card.properties[property] !== undefined && card.properties[property] !== null) {
+      value = card.properties[property];
+    } else if (card[property] !== undefined && card[property] !== null) {
+      // Fallback to direct property access (for top-level properties like id)
+      value = card[property];
     }
     if (this.isSelection(property) && value == "")
       return defaultValue; // recover from wrongly empty field
@@ -954,9 +1035,11 @@ var DuplicateEntriesWindow = {
     // PORT: Use textContent for HTML
     // ORIGINAL: .value for XUL description
     if (cardsEqu) {
+      // PORT: Use proper Unicode symbols for comparison indicators
+      // ORIGINAL: Uses Unicode symbols in XUL
       cardsEqu.textContent = comparison == -2 ? '' :
-                     comparison == 0 ? 'â‰…' :
-                     comparison <  0 ? 'â‹¦' : 'â‹§';
+                     comparison == 0 ? '≈' :  // approximately equal (U+2248)
+                     comparison <  0 ? '⊂' : '⊃';  // subset (U+2282) / superset (U+2283)
     }
 
     // if two different mail primary addresses are available, show SecondEmail field such that it can be filled in
@@ -1008,7 +1091,8 @@ var DuplicateEntriesWindow = {
         if (namesmatch && property == '__Names' ||
             mailsmatch && property == '__Emails' ||
             phonesmatch && property == '__PhoneNumbers')
-          descEqu.textContent = 'â‰ƒ'; /* matchable property matches */
+          // PORT: Use proper Unicode symbol for matchable property matches
+          descEqu.textContent = '≡'; /* matchable property matches (identical, U+2261) */
         row.appendChild(cell1);
         row.appendChild(cellEqu);
         this.attributesTableRows.appendChild(row);
@@ -1099,12 +1183,13 @@ var DuplicateEntriesWindow = {
       } else if (!identical) {
         const value1 = this.getAbstractedTransformedProperty(card1, property);
         const value2 = this.getAbstractedTransformedProperty(card2, property);
+        // PORT: Use proper Unicode symbols for equivalence indicators
         if      (value1 == value2)
-          equ = 'â‰…'; // equivalent
+          equ = '≈'; // equivalent (approximately equal, U+2248)
         else if (value1 == defaultValue)
-          equ = 'â‹¦';
+          equ = '⊂'; // subset (U+2282)
         else if (value2 == defaultValue)
-          equ = 'â‹§';
+          equ = '⊃'; // superset (U+2283)
         else if (this.isText(property)) {
           if      (value2.includes(value1))
             equ = '<';
@@ -1403,10 +1488,10 @@ var DuplicateEntriesWindow = {
         const property = this.consideredFields[index];
         if (this.isNumerical(property))
           continue; /* ignore PopularityIndex, LastModifiedDate and other integers */
-        const defaultValue = this.defaultValue(property);
-        // PORT: Get property value directly from contact object
+        // PORT: Use getProperty helper to access properties correctly
         // ORIGINAL: abCard.getProperty(property, defaultValue)
-        const value = abCard[property] !== undefined ? abCard[property] : defaultValue;
+        const value = this.getProperty(abCard, property);
+        const defaultValue = this.defaultValue(property);
         if (value != defaultValue)
           nonemptyFields += 1;
         if (this.isText(property) || this.isEmail(property) || this.isPhoneNumber(property)) {
@@ -1422,7 +1507,9 @@ var DuplicateEntriesWindow = {
       // PORT: Mailing list membership - may not be available in WebExtension API
       // ORIGINAL: Checks mailLists array populated from directory
       var mailListNames = new Set();
-      const email = abCard.PrimaryEmail; // only this email address is relevant
+      // PORT: Use getProperty to access PrimaryEmail correctly
+      // ORIGINAL: abCard.primaryEmail
+      const email = this.getProperty(abCard, 'PrimaryEmail'); // only this email address is relevant
       if (email)
         mailLists.forEach(function ([displayName, primaryEmails]) {
           if (primaryEmails.includes(email))
@@ -1622,13 +1709,20 @@ var DuplicateEntriesWindow = {
       var preference = (c1.__NonEmptyFields || 0) - (c2.__NonEmptyFields || 0);
       if (preference == 0)
         preference = (c1.__CharWeight || 0) - (c2.__CharWeight || 0);
-      if (preference == 0)
-        preference = (Number(c1.PopularityIndex) || 0) - (Number(c2.PopularityIndex) || 0);
+      if (preference == 0) {
+        // PORT: Use getProperty to access PopularityIndex correctly
+        const pop1 = Number(this.getProperty(c1, 'PopularityIndex')) || 0;
+        const pop2 = Number(this.getProperty(c2, 'PopularityIndex')) || 0;
+        preference = pop1 - pop2;
+      }
       if (preference == 0) {
         // PORT: LastModifiedDate handling
         // ORIGINAL: c1.getProperty('LastModifiedDate', 0)
-        const date1 = c1.LastModifiedDate ? (typeof c1.LastModifiedDate === 'number' ? c1.LastModifiedDate : new Date(c1.LastModifiedDate).getTime() / 1000) : 0;
-        const date2 = c2.LastModifiedDate ? (typeof c2.LastModifiedDate === 'number' ? c2.LastModifiedDate : new Date(c2.LastModifiedDate).getTime() / 1000) : 0;
+        // PORT: Use getProperty to access LastModifiedDate correctly
+        const lastMod1 = this.getProperty(c1, 'LastModifiedDate');
+        const lastMod2 = this.getProperty(c2, 'LastModifiedDate');
+        const date1 = lastMod1 ? (typeof lastMod1 === 'number' ? lastMod1 : new Date(lastMod1).getTime() / 1000) : 0;
+        const date2 = lastMod2 ? (typeof lastMod2 === 'number' ? lastMod2 : new Date(lastMod2).getTime() / 1000) : 0;
         if (date1 != 0 && date2 != 0)
           preference = date1 - date2;
       }
