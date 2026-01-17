@@ -8,27 +8,30 @@ browser.browserAction.onClicked.addListener(() => {
 });
 
 // PORT: Listen for menu command (if added via menus API)
-browser.menus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "duplicate-contacts-manager") {
-    openDuplicateWindow();
-  }
-});
-
-// PORT: Create menu item on startup
-browser.runtime.onStartup.addListener(() => {
-  createMenu();
-});
-
-browser.runtime.onInstalled.addListener(() => {
-  createMenu();
-});
-
-function createMenu() {
-  browser.menus.create({
-    id: "duplicate-contacts-manager",
-    title: "Duplicate Contacts Manager...",
-    contexts: ["tools_menu"]
+// PORT: Check if menus API is available before using it
+if (browser.menus) {
+  browser.menus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === "duplicate-contacts-manager") {
+      openDuplicateWindow();
+    }
   });
+
+  // PORT: Create menu item on startup
+  browser.runtime.onStartup.addListener(() => {
+    createMenu();
+  });
+
+  browser.runtime.onInstalled.addListener(() => {
+    createMenu();
+  });
+
+  function createMenu() {
+    browser.menus.create({
+      id: "duplicate-contacts-manager",
+      title: "Duplicate Contacts Manager...",
+      contexts: ["tools_menu"]
+    });
+  }
 }
 
 // PORT: Open the duplicate finder window

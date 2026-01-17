@@ -15,7 +15,8 @@
   
   "permissions": [
     "addressBooks",
-    "storage"
+    "storage",
+    "menus"
   ],
   
   "background": {
