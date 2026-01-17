@@ -475,9 +475,22 @@ var DuplicateEntriesWindow = {
     this.totalCardsDeleted1 = 0;
     this.totalCardsDeleted2 = 0;
     this.totalCardsDeletedAuto = 0;
+    
+    // PORT: Initialize vcards arrays before calling updateDeletedInfo
+    // ORIGINAL: Arrays initialized in readAddressBooks() which was synchronous
+    this.vcards[this.BOOK_1] = [];
+    this.vcards[this.BOOK_2] = [];
+    this.vcardsSimplified[this.BOOK_1] = [];
+    this.vcardsSimplified[this.BOOK_2] = [];
+    
     this.updateProgress();
     this.disable('startbutton');
     await this.readAddressBooks();
+    
+    // PORT: Update deleted info after contacts are loaded
+    // ORIGINAL: updateDeletedInfo called before readAddressBooks (which was sync)
+    this.updateDeletedInfo('statusAddressBook1_size' , this.BOOK_1, 0);
+    this.updateDeletedInfo('statusAddressBook2_size' , this.BOOK_2, 0);
     this.searchNextDuplicate();
   },
 
@@ -604,7 +617,10 @@ var DuplicateEntriesWindow = {
     // ORIGINAL: .value for XUL label elements
     const elem = document.getElementById(label);
     if (elem) {
-      elem.textContent = '('+cards+': '+ (this.vcards[book].length -
+      // PORT: Handle case where vcards[book] is not yet initialized
+      // ORIGINAL: readAddressBooks() was synchronous, so arrays always existed
+      const vcardsLength = this.vcards[book] ? this.vcards[book].length : 0;
+      elem.textContent = '('+cards+': '+ (vcardsLength -
                          (this.abURI1 == this.abURI2 ? this.totalCardsDeleted1 +
                                                        this.totalCardsDeleted2 : nDeleted)) +')';
     }
