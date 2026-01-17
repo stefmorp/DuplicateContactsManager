@@ -1,18 +1,12 @@
-"use strict";
+// PORT: Popup script - opens main window
+// ORIGINAL: Simple window opener in duplicateContactsManager.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  const scanButton = document.getElementById("scan");
-  const statusEl = document.getElementById("status");
-
-  if (!scanButton || !statusEl) {
-    return;
-  }
-
-  scanButton.addEventListener("click", async () => {
-    // Open the main window
-    browser.runtime.sendMessage({ action: "openWindow" });
-    window.close();
+document.getElementById('openWindow').addEventListener('click', () => {
+  browser.windows.create({
+    url: browser.runtime.getURL("window/window.html"),
+    type: "popup",
+    width: 800,
+    height: 600
   });
+  window.close();
 });
-
-

@@ -1,2 +1,3 @@
-﻿*.xpi
-originalCode.js
+mk
+*~
+.idea

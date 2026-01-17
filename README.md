@@ -1,211 +1,284 @@
-# Duplicate Contacts Manager for Thunderbird 128+
+# [Duplicate Contact Manager add-on for Thunderbird](https://addons.thunderbird.net/en-US/thunderbird/addon/duplicate-contacts-manager/)
 
-A Thunderbird add-on that searches address book(s) for duplicate contact entries and helps you merge or remove them. This is a port of the original [Duplicate Contacts Manager](https://github.com/DDvO/Duplicate-Contacts-Manager) from Thunderbird 68 (legacy XUL/XPCOM) to Thunderbird 128+ (MailExtension/WebExtension).
+This Thunderbird extension facilitates handling of redundant entries in address books.
+After installation it can be invoked via the `Tools->Duplicate Contacts Manager...` menu entry.
+One can also customize the `Toolbar` of the `Address Book` window with a `Find Duplicates` button.
 
-**Important**: This extension works only with Thunderbird's **native address books**. It does not support third-party address book extensions (such as CardBook) that maintain their own separate address book systems.
+The Duplicate Contacts Manager searches address books for matching contact entries, also known as _cards_.
+It can automatically delete all cards that match and have equivalent or less information than some other one.
+Any remaining pairs of matching cards are presented as potential duplicates for manual treatment.
+Each two cards are shown side-by-side with a comparison of all fields containing data, including any photo.
+Some important fields are always shown such that they can be filled in when they have been empty so far.
 
-## Features
+When pairs of candidate duplicates are presented, the reason why they are considered matching is given in the status line.
 
-- **Duplicate Detection**: Finds contacts that match by name, email address, or phone number
-- **Smart Matching**: Handles variations in formatting, case, accents, and phone number formats
-- **Interactive Review**: Side-by-side comparison of duplicate pairs with options to:
-  - **Skip**: Keep both contacts as-is
-  - **Merge**: Combine fields from both contacts into one
-  - **Apply**: Keep the selected contact with any changes made, and delete the other
-- **Automatic Collection**: All duplicates are collected before showing them, allowing you to review and process them at your own pace
-- **Statistics**: Shows total contacts before/after, number of duplicates removed, and changes made
+* The '≡' symbol is shown between fields with identical values.  
+All other relations are determined after abstraction of values (see the definitions below).
+* The '≃' symbol is used for indicating matching names, email addresses, or phone numbers.
+* The '≅' symbol is used for indicating equivalent fields and equivalent cards.
+* The '⋦' and '⋧' symbols indicate that a field or a whole card contains less/more information than the other.
+* The '⊆' and '⊇' symbols indicate the subset/superset relation on email addresses or phone numbers.
+* The '<' and '>' symbols indicate comparison on numerical values or the substring/superstring relation on names and other texts.
 
-## Installation
+During manual treatment of a pair of matching cards the user can skip them, can modify one or both of them, and can decide to delete one of them.
+When a card is deleted and it has a primary email address that is contained in one or more mailing lists and the other card does not have the same primary email address, the address is also deleted from the respective mailing lists.
 
-Download the code to a directory of your choice, and then:
+## Matching contact entries
 
-1. Open **Thunderbird**
-2. Go to **Tools → Add-ons and Themes**
-3. Click the **gear icon (⚙)** → **Debug Add-ons**
-4. Click **Load Temporary Add-on…**
-5. Navigate to this directory and select **`manifest.json`**
+There are two _search modes_ for finding matching cards:
 
-See also: https://developer.thunderbird.net/add-ons/hello-world-add-on#installing
+*   within a single address book with n cards, comparing each card with all other cards, resulting in n*(n-1)/2 card comparisons.
+*   with two different address books with n and m cards, comparing each card in the first one with each card of the second one, resulting in n*m card comparisons.
 
-The add-on will be loaded temporarily. You can access it via:
-- The toolbar button (opens popup → main window)
-- **Tools → Duplicate Contacts Manager...** menu item
+Two cards are considered _matching_ if any of the following conditions hold, where the details are explained below.
 
-## How to Use
+*   The cards contain matching names, or
+*   they contain matching email addresses, or
+*   they contain matching phone numbers, or
+*   both cards do not contain any name, email address, or phone number that might match.
 
-1. **Launch the extension** from the toolbar or Tools menu
-2. **Select address books** to search for duplicates:
-   - **Note**: Only Thunderbird's native address books will appear in the dropdowns
-   - Choose the first address book from the dropdown
-   - Choose the second address book (can be the same book to find duplicates within one book)
-3. **Configure options** (optional):
-   - **Auto-remove duplicates**: Automatically removes contacts with less information
-   - **Preserve first contact**: When auto-removing, keeps the first contact found
-4. **Click "Start Search"** to begin finding duplicates
-5. **Review duplicates**: For each duplicate pair:
-   - Use the radio buttons to select which contact to keep (left or right)
-   - Click **"Merge (Combine Fields)"** to combine all fields from both contacts into the selected one
-     - **Note**: The merged contact will remain in the same address book as the contact you selected to keep
-   - Click **"Apply (Delete Other Card)"** to keep the selected contact and delete the other
-   - Click **"Skip"** to keep both contacts unchanged
-6. **After processing all duplicates**: Click **"Close"** to close the window and view the final statistics
+Yet cards with non-equivalent `AIMScreenName` are never considered matching, which is convenient for preventing cards from being repeatedly presented for manual treatment.
 
-## Important Notes
+The matching relation is designed to be rather weak, such that it tends to yield more pairs of candidate duplicates.
 
-### Native Address Books Only
+_Matching_ of names, email addresses, and phone numbers is based upon equivalence of fields modulo abstraction, described below.
+As a result, for example, names differing only in letter case are considered to match.
+For the matching process, names are completed and their order is normalized —
+for example, if two name parts are detected in the `DisplayName` (e.g., "John Doe") or in an email address (e.g., "John.Doe`@`company.com"), they are taken as first and last name.
+Both multiple email addresses within a card and multiple phone numbers within a card are treated as sets, i.e., their order is ignored as well as their types.
 
-**Important**: This extension works exclusively with Thunderbird's **native address books** via the WebExtension API. 
+*   Two cards are considered to have _matching names_ if
+    *   their `DisplayName` is not empty and is equivalent, or
+    *   both their `FirstName` and their `LastName` are not empty and are pairwise equivalent, or
+    *   their `DisplayName` is empty but their `FirstName` and `LastName` are not empty and are pairwise equivalent, or
+    *   in one card the `DisplayName` is empty and either the `FirstName` or `LastName` is not empty and is equivalent to the `DisplayName` of the other card, or
+    *   their `AIMScreenName` is not empty and is equivalent.
+*   Two cards are considered to contain _matching email address_ if any of their `PrimaryEmail` or `SecondEmail` are equivalent.
+*   Two cards are considered to contain _matching phone numbers_ if any of their `CellularNumber`, `WorkPhone`, or `PagerNumber` are equivalent.
+    The `HomePhone` and `FaxNumber` fields are not considered for matching because such numbers are often shared by a group of people.
 
-- Only Thunderbird's native address books will appear in the extension's address book dropdowns
-- Third-party address book extensions (such as CardBook) maintain their own separate address book systems
-- These third-party address books are not accessible through the standard WebExtension API
-- If you use CardBook or similar extensions, their address books will not appear in this extension
-- To work with third-party address book extensions, you would need to use their own duplicate detection features (if available)
+## Abstraction of field values
 
-### Address Book Location for Merged Contacts
+Before card fields are compared their values are _abstracted_ using the following steps.
 
-When you merge two contacts:
-- The merged contact will be saved in the **same address book** as the contact you selected to keep (via the radio buttons)
-- If the two contacts are in different address books, the merged contact will be in the address book of the contact you chose to keep
-- The duplicate contact (the one you didn't select) will be deleted from its original address book
+1.  _Pruning_, which removes stray contents irrelevant for comparison:
+    1.  ignore values of certain field types — the set of ignored fields is configurable with the default being `UID, UUID, CardUID, groupDavKey, groupDavVersion, groupDavVersionPrev, RecordKey, DbRowID, PhotoType, PhotoName, LowercasePrimaryEmail, LowercaseSecondEmail, unprocessed:rev, unprocessed:x-ablabel`,
+    2.  remove leading/trailing/multiple whitespace and strip non-digit characters from phone numbers,
+    3.  strip any stray email address duplicates from names, which get inserted by some email clients as default names, and
+    4.  replace `@googlemail.com` by `@gmail.com` in email addresses.
+2.  _Transformation_, which re-arranges information for better comparison:
+    1.  correct the order of first and last name (for instance, re-order "Doe, John"),
+    2.  move middle initials such as "M" from last name to first name, and
+    3.  move name prefixes such as "von" to the last name.
+3.  _Normalization_, which equalizes representation variants:
+    1.  convert to lowercase (except for name part of AOL email addresses),
+    2.  convert texts by transcribing umlauts and ligatures, and
+    3.  if configured, replace in phone numbers the [international call (IDD) prefix](https://en.wikipedia.org/wiki/List_of_international_call_prefixes) (such as '00') by '+' and
+    the national [trunk prefix](https://en.wikipedia.org/wiki/Trunk_prefix) (such as '0') by the default [country calling code](https://en.wikipedia.org/wiki/List_of_country_calling_codes) (such as '+49').
+4.  _Simplification_, which strips less relevant information from texts:
+    1.  remove accents and punctuation, and
+    2.  remove singleton digits and letters (such as initials).
 
-## Matching Logic
+Corresponding fields in two cards are considered _equivalent_ if their abstracted values are equal.
+Note that the value adaptations mentioned above are computed only for the comparison, i.e., they do not change the actual card fields.
 
-Two contacts are considered duplicates if they match on:
-- **Name**: Matching display names, first names, or last names (with normalization for accents, case, etc.)
-- **Email**: Matching email addresses (case-insensitive)
-- **Phone**: Matching phone numbers (with normalization for formatting differences)
+If automatic removal is chosen, only cards preferred for deletion (which implies equivalent or less information than some other card; for details see below) are removed.
+When a pair of matching cards is presented for manual inspection, the card flagged by default with red color for removal is
 
-Contacts with non-equivalent `AIMScreenName` are never considered matching.
+*   the one preferred for deletion, or else (i.e., if the cards are not comparable):
+*   the one used less frequently (i.e., having a smaller `PopularityIndex`, or else
+*   the one modified/created earlier (i.e., having a smaller `LastModifiedDate`), or else
+*   the one found in the second address book or the one found later in case the two address books are the same.
 
-## Technical Details
+## Equivalence of information
 
-### Architecture
+A card is considered to have _equivalent or less information_ than another if for each non-ignored field:
 
-This add-on uses the Thunderbird WebExtension API:
-- **addressBooks API**: For listing and accessing address books
-- **contacts API**: For reading, updating, and deleting contacts
-- **storage API**: For persisting user preferences
+*   the field is equivalent to the corresponding field of the other card, or else
+*   it is a set and its value is a subset of the corresponding field value of the other card, or
+*   it is the `FirstName`, `LastName`, or `DisplayName` and its value is a substring of the corresponding field value of the other card, or
+*   it is the `PopularityIndex` or `LastModifiedDate` (which are ignored here), or
+*   it has the default value, i.e., it is empty for text fields or its value is `0` for number fields or `false` for Boolean fields.
 
-### Contact Merging
+For the above field-wise comparison, the email addresses of a card are treated as a set, the phone numbers of a card are also treated as a set, and the set of names of mailing lists a card belongs to is taken as an additional field.
 
-The merge functionality uses the Thunderbird contacts API's legacy properties interface:
-- Merges properties from both contacts intelligently
-- Combines multiple emails, phones, and web pages
-- Preserves all non-empty fields
-- Automatically updates the internal vCard when legacy properties are updated
-- See: [Thunderbird vCard API Documentation](https://thunderbird-webextension-apis.readthedocs.io/en/stable/examples/vcard.html)
+A card with equivalent or less information than another is _preferred for deletion_ if:
 
-#### Merge Strategy
+*   not all non-ignored fields are equivalent (which implies that it has less information), or else
+*   the character weight of the card is smaller, i.e.,
+    its pruned and transformed (non-ignored) field values have an equal or smaller total number of uppercase letters and special characters than the other card, or else the character weight is equal and
+*   its `PopularityIndex` is smaller, or else
+*   its `LastModifiedDate` is smaller.
 
-When merging two contacts, the extension uses the following strategy:
+Here is an example.
 
-**Base Strategy:**
-- Starts with all properties from the contact you selected to keep (card1)
-- Merges in additional information from the duplicate contact (card2)
+The card on the right will be preferred for deletion because it contains less information.
 
-**Email Addresses:**
-- Collects all unique email addresses from both contacts
-- **PrimaryEmail**: First email address found
-- **SecondEmail**: Second email address found
-- **Notes**: Any additional emails (3rd, 4th, etc.) are added as "Additional emails: email1, email2, ..."
+<table>
 
-**Phone Numbers:**
-- Collects all unique phone numbers from both contacts (from any phone field)
-- **CellularNumber**: First phone number
-- **WorkPhone**: Second phone number
-- **HomePhone**: Third phone number
-- **PagerNumber**: Fourth phone number
-- **FaxNumber**: Fifth phone number
-- **Notes**: Any additional phone numbers (6th, 7th, etc.) are added as "Additional phone numbers: phone1, phone2, ..."
+<tbody>
 
-**Web Pages:**
-- Collects all unique web page URLs from both contacts
-- **WebPage1**: First web page
-- **WebPage2**: Second web page
-- **Notes**: Any additional web pages (3rd, 4th, etc.) are added as "Additional web pages: url1, url2, ..."
+<tr>
 
-**Custom Fields:**
-- Collects all unique custom field values from both contacts
-- **Custom1**: First custom field value
-- **Custom2**: Second custom field value
-- **Custom3**: Third custom field value
-- **Custom4**: Fourth custom field value
-- **Notes**: Any additional custom fields (5th, 6th, etc.) are added as "Additional custom fields: value1, value2, ..."
+<td><code>NickName</code></td>
 
-**Text Fields** (DisplayName, FirstName, LastName, Company, JobTitle, etc.):
-- If both contacts have values: prefers the longer/more complete value
-- If only one contact has a value: uses that value
-- Preserves existing value from card1 if card2 is empty
+<td>"Péte"</td>
 
-**Selection/Numerical Fields** (PreferDisplayName, PreferMailFormat, etc.):
-- Prefers non-empty, non-zero values
-- Falls back to any available value if preferred value is not available
+<td>"  pete ! "</td>
 
-**Other Fields:**
-- Prefers non-empty values from card1 (the contact being kept)
-- Falls back to card2 values if card1 is empty
+<td>accent, punctuation, letter case, and whitespace ignored</td>
 
-**Notes Field:**
-- Combines existing notes from both contacts (avoiding duplicates)
-- Appends any overflow information:
-  - Additional emails (beyond PrimaryEmail/SecondEmail)
-  - Additional phone numbers (beyond the 5 standard phone fields)
-  - Additional web pages (beyond WebPage1/WebPage2)
-  - Additional custom fields (beyond Custom1-4)
-- Notes are separated by double newlines (`\n\n`)
+</tr>
 
-**Fields Excluded from Merge:**
-- Internal metadata fields (vCard, UID, UUID, CardUID, id, parentId, type)
-- System-managed fields (PopularityIndex, LastModifiedDate, RecordKey, DbRowID)
-- DAV sync fields (groupDavKey, groupDavVersion, etc.)
-- Internal processing fields (fields starting with `__`)
+<tr>
 
-### File Structure
+<td><code>FirstName</code></td>
 
-```
-├── manifest.json          # Add-on manifest
-├── background.js         # Background script (window management)
-├── lib/
-│   └── duplicateFinder.js # Core duplicate detection logic
-├── window/
-│   ├── window.html       # Main UI window
-│   ├── window.css        # Styles
-│   └── window.js         # Window logic and merge functionality
-└── popup/
-    ├── popup.html        # Toolbar popup
-    └── popup.js          # Popup logic
-```
+<td>"Peter"</td>
 
-## Port Status
+<td>"Peter Y van"</td>
 
-### ✅ Fully Implemented
+<td>name prefix "van" moved to last name, middle initial "Y" ignored</td>
 
-- Core duplicate detection logic (name, email, phone matching)
-- Card comparison algorithms
-- Text abstraction and normalization
-- Preferences/storage system
-- Main UI window (HTML/CSS/JS)
-- Address book selection and contact loading
-- Duplicate pair display
-- Contact deletion
-- **Contact merging** - Combines fields from duplicate contacts
-- Navigation (Back button, Close button)
-- Statistics tracking
+</tr>
 
-### Known Limitations
+<tr>
 
-- Auto-removal comparison logic may need refinement for edge cases
-- Photo display in comparison view not yet implemented
-- Advanced preferences UI (phone normalization, ignored fields) not yet exposed
-- Mailing list membership handling not yet implemented
+<td><code>LastName</code></td>
 
-## Credits
+<td>"van Müller"</td>
 
-Original add-on by DDvO: https://github.com/DDvO/Duplicate-Contacts-Manager
+<td>"Mueller"</td>
 
-Port to Thunderbird 128+ by [Your Name]
+<td>name prefix "van" moved to last name, umlauts transcribed</td>
 
-## License
+</tr>
 
-[To be determined - check original repository license]
+<tr>
+
+<td><code>DisplayName</code></td>
+
+<td>"Hans Peter van Müller"</td>
+
+<td>"van Müller, Peter"</td>
+
+<td>first name moved to the front, name is substring</td>
+
+</tr>
+
+<tr>
+
+<td><code>PreferDisplayName</code></td>
+
+<td>'yes'</td>
+
+<td>'yes'</td>
+
+<td>same truth value</td>
+
+</tr>
+
+<tr>
+
+<td><code>AimScreenName</code></td>
+
+<td>""</td>
+
+<td>""</td>
+
+<td>same AIM name</td>
+
+</tr>
+
+<tr>
+
+<td><code>PreferMailFormat</code></td>
+
+<td>'HTML'</td>
+
+<td>'unknown'</td>
+
+<td>default ('unknown') considered less information</td>
+
+</tr>
+
+<tr>
+
+<td><code>PrimaryEmail</code></td>
+
+<td>"Peter.vanMueller@company.com"</td>
+
+<td>"P.van.Mueller@gmx.de"</td>
+
+<td>emails treated as sets, letter case ignored</td>
+
+</tr>
+
+<tr>
+
+<td><code>SecondaryEmail</code></td>
+
+<td>"p.van.mueller@gmx.de"</td>
+
+<td>""</td>
+
+<td>emails treated as sets, letter case ignored</td>
+
+</tr>
+
+<tr>
+
+<td><code>WorkPhone</code></td>
+
+<td>"089/1234-5678"</td>
+
+<td>"+49 89 12345678"</td>
+
+<td>national prefix normalized and non-digits ignored</td>
+
+</tr>
+
+<tr>
+
+<td><code>PopularityIndex</code></td>
+
+<td>5</td>
+
+<td>3</td>
+
+<td>field ignored for information comparison</td>
+
+</tr>
+
+<tr>
+
+<td><code>LastModifiedDate</code></td>
+
+<td>2018-02-25 07:51:28</td>
+
+<td>2018-02-25 08:30:37</td>
+
+<td>field ignored for information comparison</td>
+
+</tr>
+
+<tr>
+
+<td><code>UUID</code></td>
+
+<td>""</td>
+
+<td>"903a61be-64d5-4844-802a"</td>
+
+<td>field ignored</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+## Configuration variables
+
+The options/configuration/preferences used by this Thunderbird extension are are saved in configuration keys starting with `extensions.DuplicateContactsManager.` —
+for instance, the list of ignored fields is stored in the variable `ignoreFields`.

@@ -1,40 +1,34 @@
 {
   "manifest_version": 2,
   "name": "Duplicate Contacts Manager",
-  "description": "Searches address book(s) for pairs of matching contact entries. Can automatically delete entries that have equivalent or less information than the other one. Any remaining matches are presented for manual treatment.",
-  "version": "1.0.6",
-
+  "description": "Facilitates handling of redundant entries in address books.",
+  "version": "2.1.1",
+  "author": "Marian Steinbach, David von Oheimb, et al.",
+  "homepage_url": "https://github.com/DDvO/Duplicate-Contacts-Manager",
+  
   "applications": {
     "gecko": {
-      "id": "duplicate-contacts-manager@ddvo.net",
+      "id": "duplicateContactsManager@ddvo.net",
       "strict_min_version": "128.0"
     }
   },
-
-  "author": "DDvO",
-  "homepage_url": "https://ddvo.net/DuplicateContactsManager/",
-
-  "background": {
-    "scripts": [
-      "background.js"
-    ]
-  },
-
+  
   "permissions": [
     "addressBooks",
-    "storage",
-    "menus"
+    "contacts",
+    "storage"
   ],
-
-  "icons": {
-    "48": "icons/icon-48.png",
-    "96": "icons/icon-96.png"
+  
+  "background": {
+    "scripts": ["background.js"]
   },
-
+  
+  "icons": {
+    "64": "chrome/content/kate.png"
+  },
+  
   "browser_action": {
     "default_title": "Duplicate Contacts Manager",
     "default_popup": "popup/popup.html"
   }
 }
-
-

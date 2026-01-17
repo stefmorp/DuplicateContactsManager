@@ -1,77 +1,43 @@
-"use strict";
+// PORT: Background script for WebExtension
+// ORIGINAL: duplicateContactsManager.js - simple window opener
+// This script handles opening the main duplicate finder window
 
-/**
- * Background script for Duplicate Contacts Manager
- * Ported from Thunderbird 68 to Thunderbird 128+
- */
-
-let windowId = null;
-
-// Open the main window when the add-on is installed or updated
-browser.runtime.onInstalled.addListener(async (details) => {
-  console.log("Duplicate Contacts Manager installed:", details.reason);
+// PORT: Listen for toolbar button click or menu command
+browser.browserAction.onClicked.addListener(() => {
+  openDuplicateWindow();
 });
 
-// Handle toolbar button click - popup will handle it, but also support direct clicks
-browser.browserAction.onClicked.addListener(async () => {
-  // If popup is set, this won't fire, but keep it for compatibility
-});
-
-// Handle messages from popup
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "openWindow") {
-    openMainWindow();
+// PORT: Listen for menu command (if added via menus API)
+browser.menus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "duplicate-contacts-manager") {
+    openDuplicateWindow();
   }
-  return true;
 });
 
-// Open the main duplicate contacts manager window
-async function openMainWindow() {
-  try {
-    // Check if window already exists
-    if (windowId) {
-      try {
-        const window = await browser.windows.get(windowId);
-        await browser.windows.update(windowId, { focused: true });
-        return;
-      } catch (e) {
-        // Window doesn't exist anymore, create a new one
-        windowId = null;
-      }
-    }
+// PORT: Create menu item on startup
+browser.runtime.onStartup.addListener(() => {
+  createMenu();
+});
 
-    // Create new window (Thunderbird/Firefox do not support a 'focused' property here)
-    const window = await browser.windows.create({
-      url: browser.runtime.getURL("window/window.html"),
-      type: "popup",
-      width: 1000,
-      height: 700
-    });
+browser.runtime.onInstalled.addListener(() => {
+  createMenu();
+});
 
-    windowId = window.id;
-
-    // Clean up windowId when window is closed
-    browser.windows.onRemoved.addListener((id) => {
-      if (id === windowId) {
-        windowId = null;
-      }
-    });
-  } catch (error) {
-    console.error("Error opening main window:", error);
-  }
+function createMenu() {
+  browser.menus.create({
+    id: "duplicate-contacts-manager",
+    title: "Duplicate Contacts Manager...",
+    contexts: ["tools_menu"]
+  });
 }
 
-// Also add menu item under Tools menu
-browser.menus.create({
-  id: "duplicate-contacts-manager",
-  title: "Duplicate Contacts Manager...",
-  contexts: ["tools_menu"]
-});
-
-browser.menus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "duplicate-contacts-manager") {
-    await openMainWindow();
-  }
-});
-
-
+// PORT: Open the duplicate finder window
+// ORIGINAL: window.open('chrome://duplicatecontactsmanager/content/duplicateEntriesWindow.xul', ...)
+function openDuplicateWindow() {
+  browser.windows.create({
+    url: browser.runtime.getURL("window/window.html"),
+    type: "popup",
+    width: 800,
+    height: 600
+  });
+}
