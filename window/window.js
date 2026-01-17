@@ -1,4 +1,4 @@
-// PORT: Main window logic - ported from duplicateEntriesWindow.js
+﻿// PORT: Main window logic - ported from duplicateEntriesWindow.js
 // ORIGINAL: chrome/content/duplicateEntriesWindow.js
 // This file contains the core duplicate detection and UI logic, minimally adapted for WebExtension API
 
@@ -844,7 +844,7 @@ var DuplicateEntriesWindow = {
     }
     // move any wrongly attached name prefix(es) from first name to last name
     var nameprefixes = "";
-    while ((p = fn.match(/^(.+)\s(von|van|und|and|für|for|zum|zur|der|de|geb|ben)\s*$/))) {
+    while ((p = fn.match(/^(.+)\s(von|van|und|and|fÃ¼r|for|zum|zur|der|de|geb|ben)\s*$/))) {
       fn = p[1];
       nameprefixes = p[2]+" "+nameprefixes;
     }
@@ -939,8 +939,8 @@ var DuplicateEntriesWindow = {
     // ORIGINAL: .value for XUL description
     if (cardsEqu) {
       cardsEqu.textContent = comparison == -2 ? '' :
-                     comparison == 0 ? '≅' :
-                     comparison <  0 ? '⋦' : '⋧';
+                     comparison == 0 ? 'â‰…' :
+                     comparison <  0 ? 'â‹¦' : 'â‹§';
     }
 
     // if two different mail primary addresses are available, show SecondEmail field such that it can be filled in
@@ -992,7 +992,7 @@ var DuplicateEntriesWindow = {
         if (namesmatch && property == '__Names' ||
             mailsmatch && property == '__Emails' ||
             phonesmatch && property == '__PhoneNumbers')
-          descEqu.textContent = '≃'; /* matchable property matches */
+          descEqu.textContent = 'â‰ƒ'; /* matchable property matches */
         row.appendChild(cell1);
         row.appendChild(cellEqu);
         this.attributesTableRows.appendChild(row);
@@ -1033,12 +1033,12 @@ var DuplicateEntriesWindow = {
     let equ;
     if (set1.isSuperset(set2)) {
       if (set2.isSuperset(set1))
-        equ = '≅';
+        equ = 'â‰…';
       else
-        equ = '⊇';
+        equ = 'âŠ‡';
     } else {
       if (set2.isSuperset(set1))
-        equ = '⊆';
+        equ = 'âŠ†';
       else
         equ = '';
     }
@@ -1068,11 +1068,11 @@ var DuplicateEntriesWindow = {
 
     // highlight values that differ; show equality or equivalence
     var identical = true;
-    let equ = '≡'; // default value indicates identical values
+    let equ = 'â‰¡'; // default value indicates identical values
     var both_empty = 0;
     if (this.isSet(property)) { /* used for '__MailListNames' */
       [both_empty, equ] = this.SetRelation(card1, card2, property);
-      identical = equ == '≅';
+      identical = equ == 'â‰…';
     } else {
       identical = leftValue == rightValue;
       both_empty = leftValue == defaultValue && rightValue == defaultValue;
@@ -1084,11 +1084,11 @@ var DuplicateEntriesWindow = {
         const value1 = this.getAbstractedTransformedProperty(card1, property);
         const value2 = this.getAbstractedTransformedProperty(card2, property);
         if      (value1 == value2)
-          equ = '≅'; // equivalent
+          equ = 'â‰…'; // equivalent
         else if (value1 == defaultValue)
-          equ = '⋦';
+          equ = 'â‹¦';
         else if (value2 == defaultValue)
-          equ = '⋧';
+          equ = 'â‹§';
         else if (this.isText(property)) {
           if      (value2.includes(value1))
             equ = '<';
@@ -1108,7 +1108,7 @@ var DuplicateEntriesWindow = {
           else if (comparison > 0)
             equ = '>';
           else
-            equ = '≡';
+            equ = 'â‰¡';
         }
         else
           equ = '';
@@ -1124,7 +1124,7 @@ var DuplicateEntriesWindow = {
     if (equ != '' &&
         (property == 'SecondEmail' || /* all but first email address/phone number */
          property != 'CellularNumber' && this.isPhoneNumber(property)))
-      equ = '⋮'; // sets displayed over multiple lines lead to multiple lines with same symbol
+      equ = 'â‹®'; // sets displayed over multiple lines lead to multiple lines with same symbol
     descEqu.textContent = equ;
 
     // create input/display fields, depending on field type
@@ -1686,11 +1686,11 @@ var DuplicateEntriesWindow = {
       text = text.toLowerCase();
     if (this.isText(property))
       // transcribe umlauts and ligatures
-      text = text.replace(/[ÄÆäæǼǽ]/g, 'ae')
-             .replace(/[ÖöŒœ]/g, 'oe')
-             .replace(/[Üü]/g, 'ue')
-             .replace(/[ß]/g, 'ss')
-             .replace(/[Ĳĳ]/g, 'ij');
+      text = text.replace(/[Ã„Ã†Ã¤Ã¦Ç¼Ç½]/g, 'ae')
+             .replace(/[Ã–Ã¶Å’Å“]/g, 'oe')
+             .replace(/[ÃœÃ¼]/g, 'ue')
+             .replace(/[ÃŸ]/g, 'ss')
+             .replace(/[Ä²Ä³]/g, 'ij');
 
     // fourth step: simplification
     if (this.isText(property))
@@ -1714,47 +1714,94 @@ var DuplicateEntriesWindow = {
       .replace(/[\"\'\-_:,;\.\!\?\&\+]+/g, '')
 
     // replace funny letters
-      .replace(/[ÂÁÀÃÅâáàãåĀāĂăĄąǺǻ]/g, 'a')
-      .replace(/[ÊÉÈËèéêëĒēĔĕĖėĘęĚě]/g, 'e')
-      .replace(/[ÌÍÎÏìíîïĨĩĪīĬĭĮįİı]/g, 'i')
-      .replace(/[ÕØÒÓÔòóôõøŌōŎŏŐőǾǿ]/g, 'o')
-      .replace(/[ÙÚÛùúûŨũŪūŬŭŮůŰűŲųơƯư]/g, 'u')
-      .replace(/[ÝýÿŶŷŸ]/g, 'y')
+      .replace(/[Ã‚ÃÃ€ÃƒÃ…Ã¢Ã¡Ã Ã£Ã¥Ä€ÄÄ‚ÄƒÄ„Ä…ÇºÇ»]/g, 'a')
+      .replace(/[ÃŠÃ‰ÃˆÃ‹Ã¨Ã©ÃªÃ«Ä’Ä“Ä”Ä•Ä–Ä—Ä˜Ä™ÄšÄ›]/g, 'e')
+      .replace(/[ÃŒÃÃŽÃÃ¬Ã­Ã®Ã¯Ä¨Ä©ÄªÄ«Ä¬Ä­Ä®Ä¯Ä°Ä±]/g, 'i')
+      .replace(/[Ã•Ã˜Ã’Ã“Ã”Ã²Ã³Ã´ÃµÃ¸ÅŒÅÅŽÅÅÅ‘Ç¾Ç¿]/g, 'o')
+      .replace(/[Ã™ÃšÃ›Ã¹ÃºÃ»Å¨Å©ÅªÅ«Å¬Å­Å®Å¯Å°Å±Å²Å³Æ¡Æ¯Æ°]/g, 'u')
+      .replace(/[ÃÃ½Ã¿Å¶Å·Å¸]/g, 'y')
 
-      .replace(/[ÇçĆćĈĉĊċČč]/g, 'c')
-      .replace(/[ÐðĎĐđ]/g, 'd')
-      .replace(/[ĜĝĞğĠġĢģ]/g, 'g')
-      .replace(/[ĤĥĦħ]/g, 'h')
-      .replace(/[Ĵĵ]/g, 'j')
-      .replace(/[Ķķĸ]/g, 'k')
-      .replace(/[ĹĺĻļĿŀŁł]/g, 'l')
-      .replace(/[ÑñŃńŅņŇňŉŊŋ]/g, 'n')
-      .replace(/[ŔŕŖŗŘř]/g, 'r')
-      .replace(/[ŚśŜŝŞşŠš]/g, 's')
-      .replace(/[ŢţŤťŦŧ]/g, 't')
-      .replace(/[Ŵŵ]/g, 'w')
-      .replace(/[ŹźŻżŽž]/g, 'z')
+      .replace(/[Ã‡Ã§Ä†Ä‡ÄˆÄ‰ÄŠÄ‹ÄŒÄ]/g, 'c')
+      .replace(/[ÃÃ°ÄŽÄÄ‘]/g, 'd')
+      .replace(/[ÄœÄÄžÄŸÄ Ä¡Ä¢Ä£]/g, 'g')
+      .replace(/[Ä¤Ä¥Ä¦Ä§]/g, 'h')
+      .replace(/[Ä´Äµ]/g, 'j')
+      .replace(/[Ä¶Ä·Ä¸]/g, 'k')
+      .replace(/[Ä¹ÄºÄ»Ä¼Ä¿Å€ÅÅ‚]/g, 'l')
+      .replace(/[Ã‘Ã±ÅƒÅ„Å…Å†Å‡ÅˆÅ‰ÅŠÅ‹]/g, 'n')
+      .replace(/[Å”Å•Å–Å—Å˜Å™]/g, 'r')
+      .replace(/[ÅšÅ›ÅœÅÅžÅŸÅ Å¡]/g, 's')
+      .replace(/[Å¢Å£Å¤Å¥Å¦Å§]/g, 't')
+      .replace(/[Å´Åµ]/g, 'w')
+      .replace(/[Å¹ÅºÅ»Å¼Å½Å¾]/g, 'z')
 
     // remove any (newly produced) leading or trailing whitespace
       .replace(/^\s+/, "")
       .replace(/\s+$/, "");
   }
 };
-
 // PORT: Initialize when window loads
 // ORIGINAL: onload="DuplicateEntriesWindow.init()" in XUL
 window.addEventListener('DOMContentLoaded', () => {
   DuplicateEntriesWindow.init();
-});
-
-window.addEventListener('beforeunload', () => {
-  DuplicateEntriesWindow.OnUnloadWindow();
-});
-
-// PORT: Initialize when window loads
-// ORIGINAL: onload="DuplicateEntriesWindow.init()" in XUL
-window.addEventListener('DOMContentLoaded', () => {
-  DuplicateEntriesWindow.init();
+  
+  // PORT: Attach event listeners to buttons (CSP-compliant, no inline handlers)
+  // ORIGINAL: onclick="..." attributes in XUL
+  document.getElementById('startbutton').addEventListener('click', () => {
+    DuplicateEntriesWindow.startSearch();
+  });
+  
+  document.getElementById('skipnextbutton').addEventListener('click', () => {
+    DuplicateEntriesWindow.skipAndSearchNextDuplicate();
+  });
+  
+  document.getElementById('keepnextbutton').addEventListener('click', () => {
+    DuplicateEntriesWindow.keepAndSearchNextDuplicate();
+  });
+  
+  document.getElementById('applynextbutton').addEventListener('click', () => {
+    DuplicateEntriesWindow.applyAndSearchNextDuplicate();
+  });
+  
+  document.getElementById('stopbutton').addEventListener('click', () => {
+    DuplicateEntriesWindow.endSearch();
+  });
+  
+  document.getElementById('quitbutton').addEventListener('click', () => {
+    window.close();
+  });
+  
+  // PORT: Attach event listeners to header cells for contact selection
+  const headerLeft = document.getElementById('headerLeft');
+  const headerRight = document.getElementById('headerRight');
+  if (headerLeft) {
+    headerLeft.addEventListener('click', () => {
+      DuplicateEntriesWindow.setContactLeftRight('left');
+    });
+  }
+  if (headerRight) {
+    headerRight.addEventListener('click', () => {
+      DuplicateEntriesWindow.setContactLeftRight('right');
+    });
+  }
+  
+  // PORT: Attach event listeners to radio buttons
+  const keepLeft = document.getElementById('keepLeft');
+  const keepRight = document.getElementById('keepRight');
+  if (keepLeft) {
+    keepLeft.addEventListener('change', () => {
+      if (keepLeft.checked) {
+        DuplicateEntriesWindow.setContactLeftRight('left');
+      }
+    });
+  }
+  if (keepRight) {
+    keepRight.addEventListener('change', () => {
+      if (keepRight.checked) {
+        DuplicateEntriesWindow.setContactLeftRight('right');
+      }
+    });
+  }
 });
 
 window.addEventListener('beforeunload', () => {
