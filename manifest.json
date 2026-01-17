@@ -24,7 +24,8 @@
   },
   
   "icons": {
-    "64": "chrome/content/kate.png"
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
   },
   
   "browser_action": {
