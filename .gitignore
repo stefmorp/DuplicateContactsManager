@@ -1,3 +1,6 @@
-mk
 *~
 .idea
+*.xpi
+originalCode.js
+*.tmp
+*.append
