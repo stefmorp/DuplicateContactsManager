@@ -1035,11 +1035,11 @@ var DuplicateEntriesWindow = {
     // PORT: Use textContent for HTML
     // ORIGINAL: .value for XUL description
     if (cardsEqu) {
-      // PORT: Use proper Unicode symbols for comparison indicators (using escape sequences for encoding safety)
+      // PORT: Use proper Unicode symbols for comparison indicators (using String.fromCharCode for encoding safety)
       // ORIGINAL: Uses Unicode symbols in XUL
       cardsEqu.textContent = comparison == -2 ? '' :
-                     comparison == 0 ? '\u2248' :  // approximately equal (U+2248)
-                     comparison <  0 ? '\u2282' : '\u2283';  // subset (U+2282) / superset (U+2283)
+                     comparison == 0 ? String.fromCharCode(0x2248) :  // approximately equal (U+2248)
+                     comparison <  0 ? String.fromCharCode(0x2282) : String.fromCharCode(0x2283);  // subset (U+2282) / superset (U+2283)
     }
 
     // if two different mail primary addresses are available, show SecondEmail field such that it can be filled in
@@ -1091,8 +1091,8 @@ var DuplicateEntriesWindow = {
         if (namesmatch && property == '__Names' ||
             mailsmatch && property == '__Emails' ||
             phonesmatch && property == '__PhoneNumbers')
-          // PORT: Use proper Unicode symbol for matchable property matches (using escape sequence for encoding safety)
-          descEqu.textContent = '\u2261'; /* matchable property matches (identical, U+2261) */
+          // PORT: Use proper Unicode symbol for matchable property matches (using String.fromCharCode for encoding safety)
+          descEqu.textContent = String.fromCharCode(0x2261); /* matchable property matches (identical, U+2261) */
         row.appendChild(cell1);
         row.appendChild(cellEqu);
         this.attributesTableRows.appendChild(row);
@@ -1183,13 +1183,13 @@ var DuplicateEntriesWindow = {
       } else if (!identical) {
         const value1 = this.getAbstractedTransformedProperty(card1, property);
         const value2 = this.getAbstractedTransformedProperty(card2, property);
-        // PORT: Use proper Unicode symbols for equivalence indicators (using escape sequences for encoding safety)
+        // PORT: Use proper Unicode symbols for equivalence indicators (using String.fromCharCode for encoding safety)
         if      (value1 == value2)
-          equ = '\u2248'; // equivalent (approximately equal, U+2248)
+          equ = String.fromCharCode(0x2248); // equivalent (approximately equal, U+2248)
         else if (value1 == defaultValue)
-          equ = '\u2282'; // subset (U+2282)
+          equ = String.fromCharCode(0x2282); // subset (U+2282)
         else if (value2 == defaultValue)
-          equ = '\u2283'; // superset (U+2283)
+          equ = String.fromCharCode(0x2283); // superset (U+2283)
         else if (this.isText(property)) {
           if      (value2.includes(value1))
             equ = '<';
