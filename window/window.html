@@ -12,13 +12,13 @@
   <div id="duplicatesButtonsBox" style="display: flex; align-items: center; justify-content: center; padding: 5px;">
     <!-- PORT: HTML button instead of XUL button -->
     <!-- ORIGINAL: <button id="startbutton" class="dialog" label="..." oncommand="..." /> -->
-    <button id="startbutton" class="dialog" onclick="DuplicateEntriesWindow.startSearch()">Start</button>
-    <button id="skipnextbutton" class="dialog" style="visibility: visible" disabled="true" onclick="DuplicateEntriesWindow.skipAndSearchNextDuplicate()">Skip &gt;</button>
-    <button id="keepnextbutton" class="dialog" style="visibility: visible" disabled="true" onclick="DuplicateEntriesWindow.keepAndSearchNextDuplicate()">Keep both &gt;</button>
-    <button id="applynextbutton" class="dialog" style="visibility: visible" disabled="true" onclick="DuplicateEntriesWindow.applyAndSearchNextDuplicate()">Remove one &gt;</button>
+    <button id="startbutton" class="dialog">Start</button>
+    <button id="skipnextbutton" class="dialog" style="visibility: visible" disabled="true">Skip &gt;</button>
+    <button id="keepnextbutton" class="dialog" style="visibility: visible" disabled="true">Keep both &gt;</button>
+    <button id="applynextbutton" class="dialog" style="visibility: visible" disabled="true">Remove one &gt;</button>
     <div style="flex: 1;"></div> <!-- PORT: spacer -->
-    <button id="stopbutton" class="dialog" style="display: none" onclick="DuplicateEntriesWindow.endSearch()">Stop</button>
-    <button id="quitbutton" class="dialog" style="display: none" onclick="window.close()">Quit</button>
+    <button id="stopbutton" class="dialog" style="display: none">Stop</button>
+    <button id="quitbutton" class="dialog" style="display: none">Quit</button>
   </div>
   
   <!-- PORT: Status bar as flex div instead of XUL hbox -->
@@ -101,13 +101,13 @@
           <!-- PORT: HTML table header cells instead of XUL row with label/hbox/description -->
           <!-- ORIGINAL: <label id="fieldLabels" class="field" value=" " /> -->
           <th class="field" style="width: 0;"></th>
-          <th id="headerLeft" class="keep" style="flex: 3; cursor: pointer;" onclick="DuplicateEntriesWindow.setContactLeftRight('left')">
+          <th id="headerLeft" class="keep" style="flex: 3; cursor: pointer;">
             <!-- PORT: HTML radio button instead of XUL radio -->
             <!-- ORIGINAL: <radio id="keepLeft" label="to_be_kept" selected="true"/> -->
             <input type="radio" id="keepLeft" name="keepSide" checked><label for="keepLeft">to be kept</label>
           </th>
           <th class="equivalence" style="width: 0;" id="cardsEqu"></th>
-          <th id="headerRight" class="remove" style="flex: 3; cursor: pointer;" onclick="DuplicateEntriesWindow.setContactLeftRight('right')">
+          <th id="headerRight" class="remove" style="flex: 3; cursor: pointer;">
             <input type="radio" id="keepRight" name="keepSide"><label for="keepRight">to be removed</label>
           </th>
         </tr>
