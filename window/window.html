@@ -92,10 +92,10 @@
   
   <!-- PORT: Table pane as div instead of XUL hbox -->
   <!-- ORIGINAL: <hbox id="tablepane" flex="1"> -->
-  <div id="tablepane" style="display: none; flex: 1; overflow-y: auto;">
+  <div id="tablepane" style="display: none; flex: 1; overflow-y: auto; overflow-x: visible;">
     <!-- PORT: HTML table instead of XUL grid -->
     <!-- ORIGINAL: <grid id="AttributesTable"> -->
-    <table id="AttributesTable" style="margin: 10px 20px 5px 15px; width: 100%;">
+    <table id="AttributesTable" style="margin: 10px 20px 5px 15px;">
       <thead>
         <tr id="tableheader" style="font-weight: bold; margin-bottom: 5px;">
           <!-- PORT: HTML table header cells instead of XUL row with label/hbox/description -->
@@ -144,6 +144,6 @@
     </div>
   </div>
   
-  <script src="window.js"></script>
+  <script src="window.js" charset="UTF-8"></script>
 </body>
 </html>

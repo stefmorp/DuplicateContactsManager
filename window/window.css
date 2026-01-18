@@ -51,6 +51,11 @@
   overflow-y: auto;
 }
 
+#handleDuplicates-window #tablepane {
+  overflow-x: visible;
+  overflow-y: auto;
+}
+
 #handleDuplicates-window .tbox {
   margin: 10px 20px 5px 15px;
   padding: 10px;
@@ -87,8 +92,10 @@
 
 #handleDuplicates-window #AttributesTable {
   margin: 10px 20px 5px 15px;
-  width: 100%;
+  width: calc(100% - 35px); /* Subtract left (15px) + right (20px) margins */
   border-collapse: collapse;
+  box-sizing: border-box;
+  table-layout: fixed; /* Fixed table layout prevents columns from expanding beyond their width */
 }
 
 #handleDuplicates-window #tableheader {
@@ -96,18 +103,64 @@
   margin-bottom: 5px;
 }
 
+/* PORT: Match header column widths to data column widths for fixed table layout */
+#handleDuplicates-window #tableheader th:first-child {
+  width: 20%;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+#handleDuplicates-window #tableheader th.equivalence {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+#handleDuplicates-window #tableheader th:not(.field):not(.equivalence) {
+  width: calc((100% - 20% - 40px) / 2);
+}
+
 #handleDuplicates-window #AttributesTableRows td {
   padding: 0px;
+  vertical-align: top;
+  border: 1px solid #ddd;
+}
+
+#handleDuplicates-window #AttributesTableRows td:last-child {
+  border-right: 1px solid #ddd;
 }
 
 #handleDuplicates-window #AttributesTableRows .field {
   padding: 3px;
 }
 
-#handleDuplicates-window .equivalence {
+/* PORT: Ensure table cells have proper width constraints */
+#handleDuplicates-window #AttributesTableRows td:first-child {
+  width: 20%; /* Fixed width for label column */
+  min-width: 150px;
+  max-width: 200px;
+}
+
+#handleDuplicates-window #AttributesTableRows td.equivalence {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+}
+
+#handleDuplicates-window #AttributesTableRows td:not(.field):not(.equivalence) {
+  width: calc((100% - 20% - 40px) / 2); /* Split remaining space equally between left and right columns */
+  padding: 3px;
+  overflow: hidden; /* Prevent content from overflowing cell */
+  word-wrap: break-word; /* Break long words if needed */
+}
+
+#handleDuplicates-window .equivalence,
+#handleDuplicates-window #cardsEqu {
   font-size: 20px;
   text-align: center;
   padding: 5px;
+  font-family: "Segoe UI Symbol", "Apple Symbols", "Symbola", "DejaVu Sans", sans-serif;
 }
 
 #handleDuplicates-window #duplicatesButtonsBox {
@@ -163,20 +216,36 @@
 #handleDuplicates-window table {
   width: 100%;
   border-collapse: collapse;
+  border: 1px solid #ddd;
 }
 
 #handleDuplicates-window table th,
 #handleDuplicates-window table td {
   padding: 8px 4px;
-  border: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
+
+#handleDuplicates-window table th:last-child,
+#handleDuplicates-window table td:last-child {
+  border-right: 1px solid #ddd;
 }
 
 #handleDuplicates-window input[type="text"],
 #handleDuplicates-window textarea,
 #handleDuplicates-window select {
   width: 100%;
+  max-width: 100%;
   padding: 4px;
   border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+#handleDuplicates-window textarea {
+  resize: vertical; /* Only allow vertical resizing, not horizontal */
+  min-width: 0; /* Allow textarea to shrink below its content width */
+  overflow-x: auto; /* Show horizontal scrollbar if content is wider */
 }
 
 #handleDuplicates-window button {

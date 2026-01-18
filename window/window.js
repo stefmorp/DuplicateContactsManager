@@ -1,4 +1,4 @@
-﻿// PORT: Main window logic - ported from duplicateEntriesWindow.js
+// PORT: Main window logic - ported from duplicateEntriesWindow.js
 // ORIGINAL: chrome/content/duplicateEntriesWindow.js
 // This file contains the core duplicate detection and UI logic, minimally adapted for WebExtension API
 
@@ -1035,11 +1035,15 @@ var DuplicateEntriesWindow = {
     // PORT: Use textContent for HTML
     // ORIGINAL: .value for XUL description
     if (cardsEqu) {
-      // PORT: Use proper Unicode symbols for comparison indicators (using String.fromCharCode for encoding safety)
+      // PORT: Use proper Unicode symbols for comparison indicators (using createTextNode for reliable rendering)
       // ORIGINAL: Uses Unicode symbols in XUL
-      cardsEqu.textContent = comparison == -2 ? '' :
-                     comparison == 0 ? String.fromCharCode(0x2248) :  // approximately equal (U+2248)
-                     comparison <  0 ? String.fromCharCode(0x2282) : String.fromCharCode(0x2283);  // subset (U+2282) / superset (U+2283)
+      // Clear existing content
+      cardsEqu.textContent = '';
+      if (comparison != -2) {
+        const symbol = comparison == 0 ? String.fromCharCode(0x2248) :  // ≈ approximately equal (U+2248)
+                       comparison <  0 ? String.fromCharCode(0x2282) : String.fromCharCode(0x2283);  // ⊂ subset (U+2282) / ⊃ superset (U+2283)
+        cardsEqu.appendChild(document.createTextNode(symbol));
+      }
     }
 
     // if two different mail primary addresses are available, show SecondEmail field such that it can be filled in
@@ -1091,8 +1095,8 @@ var DuplicateEntriesWindow = {
         if (namesmatch && property == '__Names' ||
             mailsmatch && property == '__Emails' ||
             phonesmatch && property == '__PhoneNumbers')
-          // PORT: Use proper Unicode symbol for matchable property matches (using String.fromCharCode for encoding safety)
-          descEqu.textContent = String.fromCharCode(0x2261); /* matchable property matches (identical, U+2261) */
+          // PORT: Use proper Unicode symbol for matchable property matches (using String.fromCharCode for reliable rendering)
+          descEqu.textContent = String.fromCharCode(0x2261); /* ≡ matchable property matches (identical, U+2261) */
         row.appendChild(cell1);
         row.appendChild(cellEqu);
         this.attributesTableRows.appendChild(row);
@@ -1133,12 +1137,12 @@ var DuplicateEntriesWindow = {
     let equ;
     if (set1.isSuperset(set2)) {
       if (set2.isSuperset(set1))
-        equ = 'â‰…';
+        equ = String.fromCharCode(0x2245); // ≅ approximately equal to (U+2245)
       else
-        equ = 'âŠ‡';
+        equ = String.fromCharCode(0x2287); // ⊇ superset of or equal to (U+2287)
     } else {
       if (set2.isSuperset(set1))
-        equ = 'âŠ†';
+        equ = String.fromCharCode(0x2286); // ⊆ subset of or equal to (U+2286)
       else
         equ = '';
     }
@@ -1168,11 +1172,11 @@ var DuplicateEntriesWindow = {
 
     // highlight values that differ; show equality or equivalence
     var identical = true;
-    let equ = 'â‰¡'; // default value indicates identical values
+    let equ = String.fromCharCode(0x2261); // ≡ default value indicates identical values (U+2261)
     var both_empty = 0;
     if (this.isSet(property)) { /* used for '__MailListNames' */
       [both_empty, equ] = this.SetRelation(card1, card2, property);
-      identical = equ == 'â‰…';
+      identical = equ == String.fromCharCode(0x2245); // ≅ approximately equal to (U+2245)
     } else {
       identical = leftValue == rightValue;
       both_empty = leftValue == defaultValue && rightValue == defaultValue;
@@ -1183,13 +1187,13 @@ var DuplicateEntriesWindow = {
       } else if (!identical) {
         const value1 = this.getAbstractedTransformedProperty(card1, property);
         const value2 = this.getAbstractedTransformedProperty(card2, property);
-        // PORT: Use proper Unicode symbols for equivalence indicators (using String.fromCharCode for encoding safety)
+        // PORT: Use proper Unicode symbols for equivalence indicators (using String.fromCharCode for reliable rendering)
         if      (value1 == value2)
-          equ = String.fromCharCode(0x2248); // equivalent (approximately equal, U+2248)
+          equ = String.fromCharCode(0x2248); // ≈ equivalent (approximately equal, U+2248)
         else if (value1 == defaultValue)
-          equ = String.fromCharCode(0x2282); // subset (U+2282)
+          equ = String.fromCharCode(0x2282); // ⊂ subset (U+2282)
         else if (value2 == defaultValue)
-          equ = String.fromCharCode(0x2283); // superset (U+2283)
+          equ = String.fromCharCode(0x2283); // ⊃ superset (U+2283)
         else if (this.isText(property)) {
           if      (value2.includes(value1))
             equ = '<';
@@ -1209,7 +1213,7 @@ var DuplicateEntriesWindow = {
           else if (comparison > 0)
             equ = '>';
           else
-            equ = 'â‰¡';
+            equ = String.fromCharCode(0x2261); // ≡ identical to (U+2261)
         }
         else
           equ = '';
@@ -1225,7 +1229,7 @@ var DuplicateEntriesWindow = {
     if (equ != '' &&
         (property == 'SecondEmail' || /* all but first email address/phone number */
          property != 'CellularNumber' && this.isPhoneNumber(property)))
-      equ = 'â‹®'; // sets displayed over multiple lines lead to multiple lines with same symbol
+      equ = String.fromCharCode(0x22EE); // ⋮ vertical ellipsis (U+22EE) - sets displayed over multiple lines lead to multiple lines with same symbol
     descEqu.textContent = equ;
 
     // create input/display fields, depending on field type
@@ -1276,10 +1280,9 @@ var DuplicateEntriesWindow = {
       cell2valuebox = make_valuebox(rightValue);
     }
 
-    // PORT: HTML elements don't use flex attribute, use CSS classes instead
+    // PORT: HTML elements don't use flex attribute - width is controlled by CSS
     // ORIGINAL: cell1valuebox.setAttribute('flex', '2');
-    cell1valuebox.style.flex = '2';
-    cell2valuebox.style.flex = '2';
+    // No need to set flex on table cell children - width is controlled by CSS
     cell1valuebox.setAttribute('id',  'left_'+property);
     cell2valuebox.setAttribute('id', 'right_'+property);
 
